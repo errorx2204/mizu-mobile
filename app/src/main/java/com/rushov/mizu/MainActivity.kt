@@ -8,8 +8,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.rushov.mizu.presentation.screens.LoginScreen
 import com.rushov.mizu.presentation.screens.MainAppScreen
 import com.rushov.mizu.presentation.screens.OnboardingScreen
+import com.rushov.mizu.presentation.screens.RegisterScreen
 import com.rushov.mizu.presentation.screens.SplashScreen
 import com.rushov.mizu.ui.theme.MizuTheme
 
@@ -33,7 +35,15 @@ fun MizuApp() {
             onSplashFinished = { currentScreen = "onboarding" }
         )
         "onboarding" -> OnboardingScreen(
-            onOnboardingFinished = { currentScreen = "main" }
+            onOnboardingFinished = { currentScreen = "login" }
+        )
+        "login" -> LoginScreen(
+            onLoginSuccess = { currentScreen = "main" },
+            onNavigateToRegister = { currentScreen = "register" }
+        )
+        "register" -> RegisterScreen(
+            onRegisterSuccess = { currentScreen = "login" },
+            onNavigateToLogin = { currentScreen = "login" }
         )
         "main" -> MainAppScreen()
     }
