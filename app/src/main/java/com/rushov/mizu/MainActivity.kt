@@ -14,6 +14,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -21,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rushov.mizu.presentation.components.MizuButton
 import com.rushov.mizu.presentation.components.MizuCard
+import com.rushov.mizu.presentation.components.MizuTextField
 import com.rushov.mizu.ui.theme.MizuTheme
 
 class MainActivity : ComponentActivity() {
@@ -36,6 +41,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MizuHomeScreen() {
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -58,9 +66,9 @@ fun MizuHomeScreen() {
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
-
+                    
                     Spacer(modifier = Modifier.height(8.dp))
-
+                    
                     Text(
                         text = "Money is Water!",
                         fontSize = 16.sp,
@@ -69,17 +77,25 @@ fun MizuHomeScreen() {
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Form Fields
+            MizuTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = "Your Name"
+            )
+
+            MizuTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = "Email Address"
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             MizuButton(
                 text = "Get Started",
-                onClick = { }
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            MizuButton(
-                text = "Learn More",
                 onClick = { }
             )
         }
