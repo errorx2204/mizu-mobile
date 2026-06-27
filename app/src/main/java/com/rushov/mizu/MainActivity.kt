@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rushov.mizu.presentation.components.MizuBottomNav
 import com.rushov.mizu.presentation.components.MizuButton
 import com.rushov.mizu.presentation.components.MizuCard
 import com.rushov.mizu.presentation.components.MizuTextField
@@ -33,71 +35,137 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MizuTheme {
-                MizuHomeScreen()
+                MizuApp()
             }
         }
     }
 }
 
 @Composable
-fun MizuHomeScreen() {
+fun MizuApp() {
+    var selectedRoute by remember { mutableStateOf("home") }
+
+    Scaffold(
+        bottomBar = {
+            MizuBottomNav(
+                selectedRoute = selectedRoute,
+                onItemSelected = { route -> selectedRoute = route }
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            when (selectedRoute) {
+                "home" -> HomeScreen()
+                "transactions" -> TransactionsScreen()
+                "budget" -> BudgetScreen()
+                "profile" -> ProfileScreen()
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeScreen() {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            MizuCard {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "MIZU",
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Text(
-                        text = "Money is Water!",
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+        MizuCard {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "MIZU",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Text(
+                    text = "Money is Water!",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Form Fields
-            MizuTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = "Your Name"
-            )
-
-            MizuTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = "Email Address"
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            MizuButton(
-                text = "Get Started",
-                onClick = { }
-            )
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        MizuTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = "Your Name"
+        )
+
+        MizuTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = "Email Address"
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        MizuButton(
+            text = "Get Started",
+            onClick = { }
+        )
+    }
+}
+
+@Composable
+fun TransactionsScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Transactions",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+fun BudgetScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Budget",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+fun ProfileScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Profile",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }
