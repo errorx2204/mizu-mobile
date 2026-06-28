@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -14,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,9 +23,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rushov.mizu.data.remote.RegisterRequest
+import com.rushov.mizu.data.remote.RetrofitClient
 import com.rushov.mizu.presentation.components.MizuButton
 import com.rushov.mizu.presentation.components.MizuCard
 import com.rushov.mizu.presentation.components.MizuTextField
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(
@@ -35,6 +40,8 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -44,7 +51,6 @@ fun RegisterScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Logo
         Text(
             text = "MIZU",
             fontSize = 40.sp,
@@ -61,7 +67,6 @@ fun RegisterScreen(
             modifier = Modifier.padding(bottom = 24.dp)
         )
 
-        // Register Form
         MizuCard {
             Column(
                 modifier = Modifier.padding(8.dp),
@@ -77,7 +82,7 @@ fun RegisterScreen(
 
                 MizuTextField(
                     value = name,
-                    onValueChange = { 
+                    onValueChange = {
                         name = it
                         errorMessage = ""
                     },
@@ -86,7 +91,7 @@ fun RegisterScreen(
 
                 MizuTextField(
                     value = email,
-                    onValueChange = { 
+                    onValueChange = {
                         email = it
                         errorMessage = ""
                     },
@@ -95,7 +100,7 @@ fun RegisterScreen(
 
                 MizuTextField(
                     value = password,
-                    onValueChange = { 
+                    onValueChange = {
                         password = it
                         errorMessage = ""
                     },
@@ -104,14 +109,13 @@ fun RegisterScreen(
 
                 MizuTextField(
                     value = confirmPassword,
-                    onValueChange = { 
+                    onValueChange = {
                         confirmPassword = it
                         errorMessage = ""
                     },
                     label = "Confirm Password"
                 )
 
-                // Error Message
                 if (errorMessage.isNotEmpty()) {
                     Text(
                         text = errorMessage,
@@ -123,25 +127,47 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                MizuButton(
-                    text = "Create Account",
-                    onClick = {
-                        when {
-                            name.isEmpty() -> errorMessage = "Please enter your name"
-                            email.isEmpty() -> errorMessage = "Please enter email"
-                            password.isEmpty() -> errorMessage = "Please enter password"
-                            password.length < 6 -> errorMessage = "Password must be at least 6 characters"
-                            password != confirmPassword -> errorMessage = "Passwords do not match"
-                            else -> onRegisterSuccess()
+                if (isLoading) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                } else {
+                    MizuButton(
+                        text = "Create Account",
+                        onClick = {
+                            when {
+                                name.isEmpty() -> errorMessage = "Please enter your name"
+                                email.isEmpty() -> errorMessage = "Please enter email"
+                                password.isEmpty() -> errorMessage = "Please enter password"
+                                password.length < 6 -> errorMessage = "Password must be at least 6 characters"
+                                password != confirmPassword -> errorMessage = "Passwords do not match"
+                                else -> {
+                                    scope.launch {
+                                        isLoading = true
+                                        errorMessage = ""
+                                        try {
+                                            val response = RetrofitClient.api.register(
+                                                RegisterRequest(email, name, password)
+                                            )
+                                            if (response.isSuccessful) {
+                                                onRegisterSuccess()
+                                            } else {
+                                                errorMessage = "Email already registered or server error"
+                                            }
+                                        } catch (e: Exception) {
+                                            errorMessage = "Network error: ${e.message}"
+                                        } finally {
+                                            isLoading = false
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Login Link
         TextButton(onClick = onNavigateToLogin) {
             Text(
                 text = "Already have an account? Login",
