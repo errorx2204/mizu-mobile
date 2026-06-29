@@ -32,7 +32,8 @@ fun MizuApp() {
 
     when (currentScreen) {
         "splash" -> SplashScreen(
-            onSplashFinished = { currentScreen = "onboarding" }
+            onNavigateToOnboarding = { currentScreen = "onboarding" },
+            onNavigateToMainApp = { currentScreen = "main" }
         )
         "onboarding" -> OnboardingScreen(
             onOnboardingFinished = { currentScreen = "login" }
@@ -45,6 +46,8 @@ fun MizuApp() {
             onRegisterSuccess = { currentScreen = "login" },
             onNavigateToLogin = { currentScreen = "login" }
         )
-        "main" -> MainAppScreen()
+        "main" -> MainAppScreen(
+            onLogout = { currentScreen = "login" }
+        )
     }
 }

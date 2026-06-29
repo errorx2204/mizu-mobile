@@ -1,5 +1,6 @@
 package com.rushov.mizu.presentation.screens
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,10 +20,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rushov.mizu.data.local.DataStoreManager
 import com.rushov.mizu.data.remote.LoginRequest
 import com.rushov.mizu.data.remote.RetrofitClient
 import com.rushov.mizu.presentation.components.MizuButton
@@ -35,6 +38,7 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
+    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -125,6 +129,17 @@ fun LoginScreen(
                                                 LoginRequest(email, password)
                                             )
                                             if (response.isSuccessful) {
+                                                val tokenResponse = response.body()
+                                                tokenResponse?.let {
+                                                    // Save token and user data
+                                                    DataStoreManager.saveUserData(
+                                                        context = context,
+                                                        token = it.access_token,
+                                                        userId = 1, // You'll get this from backend
+                                                        name = email.substringBefore("@"),
+                                                        email = email
+                                                    )
+                                                }
                                                 onLoginSuccess()
                                             } else {
                                                 errorMessage = "Invalid email or password"
