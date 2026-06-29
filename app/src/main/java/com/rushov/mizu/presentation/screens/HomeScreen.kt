@@ -75,7 +75,6 @@ fun HomeScreen(userId: Int = 1) {
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        // Header
         Text(
             text = "Dashboard",
             fontSize = 28.sp,
@@ -84,34 +83,28 @@ fun HomeScreen(userId: Int = 1) {
             modifier = Modifier.padding(vertical = 16.dp)
         )
 
-        // Balance Card
         BalanceCard(balance, income, expense)
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Quick Stats
         QuickStatsRow(transactions)
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Charts
         if (isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 color = MaterialTheme.colorScheme.primary
             )
         } else {
-            // Expense Pie Chart
             ExpensePieChart(transactions)
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Monthly Bar Chart
             MonthlyBarChart(transactions)
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Recent Transactions
             RecentTransactionsSection(transactions)
         }
         
@@ -156,15 +149,15 @@ fun BalanceCard(balance: Double, income: Double, expense: Double) {
                     .padding(top = 16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                IncomeExpenseItem("Income", income, Color(0xFF4CAF50), "?")
-                IncomeExpenseItem("Expense", expense, Color(0xFFE91E63), "?")
+                IncomeExpenseItem("Income", income, Color(0xFF4CAF50))
+                IncomeExpenseItem("Expense", expense, Color(0xFFE91E63))
             }
         }
     }
 }
 
 @Composable
-fun IncomeExpenseItem(label: String, amount: Double, color: Color, arrow: String) {
+fun IncomeExpenseItem(label: String, amount: Double, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -175,7 +168,7 @@ fun IncomeExpenseItem(label: String, amount: Double, color: Color, arrow: String
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = arrow,
+                    text = if (label == "Income") "+" else "-",
                     color = color,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold

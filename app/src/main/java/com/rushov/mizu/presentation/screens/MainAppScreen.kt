@@ -40,24 +40,9 @@ fun MainAppScreen(onLogout: () -> Unit) {
             when (selectedRoute) {
                 "home" -> HomeScreen()
                 "transactions" -> TransactionsScreen(userId = 1)
-                "budget" -> BudgetScreen()
+                "budget" -> BudgetScreen(userId = 1)
                 "profile" -> ProfileScreen(onLogout = onLogout)
             }
         }
-    }
-}
-
-@Composable
-fun BudgetScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "Budget",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
     }
 }

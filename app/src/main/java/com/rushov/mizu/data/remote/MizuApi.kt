@@ -5,6 +5,7 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Query
 
 data class RegisterRequest(
@@ -47,6 +48,18 @@ data class TransactionResponse(
     val created_at: String
 )
 
+data class BudgetRequest(
+    val category: String,
+    val amount: Double
+)
+
+data class BudgetResponse(
+    val id: Int,
+    val user_id: Int,
+    val category: String,
+    val amount: Double
+)
+
 interface MizuApi {
     @POST("auth/register")
     suspend fun register(@Body request: RegisterRequest): Response<AuthResponse>
@@ -67,4 +80,24 @@ interface MizuApi {
 
     @DELETE("transactions/{transaction_id}")
     suspend fun deleteTransaction(transactionId: Int): Response<Unit>
+
+    @POST("budgets/")
+    suspend fun createBudget(
+        @Query("user_id") userId: Int,
+        @Body request: BudgetRequest
+    ): Response<BudgetResponse>
+
+    @GET("budgets/")
+    suspend fun getBudgets(
+        @Query("user_id") userId: Int
+    ): Response<List<BudgetResponse>>
+
+    @PUT("budgets/{budget_id}")
+    suspend fun updateBudget(
+        budgetId: Int,
+        @Body request: BudgetRequest
+    ): Response<BudgetResponse>
+
+    @DELETE("budgets/{budget_id}")
+    suspend fun deleteBudget(budgetId: Int): Response<Unit>
 }
