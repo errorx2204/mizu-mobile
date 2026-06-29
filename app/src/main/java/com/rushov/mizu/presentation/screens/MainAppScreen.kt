@@ -46,7 +46,7 @@ fun MainAppScreen() {
         ) {
             when (selectedRoute) {
                 "home" -> HomeScreen()
-                "transactions" -> TransactionsScreen()
+                "transactions" -> TransactionsScreen(userId = 1)
                 "budget" -> BudgetScreen()
                 "profile" -> ProfileScreen()
             }
@@ -106,21 +106,6 @@ fun HomeScreen() {
         MizuButton(
             text = "Get Started",
             onClick = { }
-        )
-    }
-}
-
-@Composable
-fun TransactionsScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "Transactions",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
         )
     }
 }
