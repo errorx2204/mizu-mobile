@@ -22,7 +22,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,16 +49,29 @@ import com.rushov.mizu.presentation.components.MizuTextField
 import kotlinx.coroutines.launch
 
 val categories = listOf(
-    "Food" to "??",
-    "Transport" to "??",
-    "Shopping" to "???",
-    "Entertainment" to "??",
-    "Bills" to "??",
-    "Health" to "??",
-    "Education" to "??",
-    "Salary" to "??",
-    "Investment" to "??",
-    "Other" to "??"
+    "Food" to "F",
+    "Transport" to "T",
+    "Shopping" to "S",
+    "Entertainment" to "E",
+    "Bills" to "B",
+    "Health" to "H",
+    "Education" to "Ed",
+    "Salary" to "Sa",
+    "Investment" to "I",
+    "Other" to "O"
+)
+
+val categoryColors = mapOf(
+    "Food" to Color(0xFFFF6B6B),
+    "Transport" to Color(0xFF4ECDC4),
+    "Shopping" to Color(0xFF45B7D1),
+    "Entertainment" to Color(0xFF96CEB4),
+    "Bills" to Color(0xFFFFEAA7),
+    "Health" to Color(0xFFDDA0DD),
+    "Education" to Color(0xFF98D8C8),
+    "Salary" to Color(0xFF4CAF50),
+    "Investment" to Color(0xFF2196F3),
+    "Other" to Color(0xFF95A5A6)
 )
 
 val titles = mapOf(
@@ -76,10 +92,27 @@ fun TransactionsScreen(userId: Int = 1) {
     var transactions by remember { mutableStateOf<List<TransactionResponse>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var deleteMessage by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
+    fun loadTransactions() {
+        scope.launch {
+            isLoading = true
+            try {
+                val response = RetrofitClient.api.getTransactions(userId)
+                if (response.isSuccessful) {
+                    transactions = response.body() ?: emptyList()
+                }
+            } catch (e: Exception) {
+                // Handle error
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
     LaunchedEffect(key1 = true) {
-        loadTransactions(userId) { transactions = it }
+        loadTransactions()
     }
 
     Box(
@@ -104,6 +137,19 @@ fun TransactionsScreen(userId: Int = 1) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            if (deleteMessage.isNotEmpty()) {
+                Text(
+                    text = deleteMessage,
+                    fontSize = 14.sp,
+                    color = Color(0xFF4CAF50),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                LaunchedEffect(deleteMessage) {
+                    kotlinx.coroutines.delay(2000)
+                    deleteMessage = ""
+                }
+            }
+
             if (isLoading) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             } else if (transactions.isEmpty()) {
@@ -118,22 +164,54 @@ fun TransactionsScreen(userId: Int = 1) {
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(transactions) { transaction ->
-                        TransactionItem(transaction)
+                    items(
+                        items = transactions,
+                        key = { it.id }
+                    ) { transaction ->
+                        SwipeableTransactionItem(
+                            transaction = transaction,
+                            onDelete = {
+                                scope.launch {
+                                    try {
+                                        val response = RetrofitClient.api.deleteTransaction(transaction.id)
+                                        if (response.isSuccessful) {
+                                            deleteMessage = "Transaction deleted!"
+                                            loadTransactions()
+                                        }
+                                    } catch (e: Exception) {
+                                        deleteMessage = "Failed to delete"
+                                    }
+                                }
+                            }
+                        )
                     }
                 }
             }
         }
 
-        FloatingActionButton(
-            onClick = { showAddDialog = true },
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
-            containerColor = MaterialTheme.colorScheme.primary,
-            shape = CircleShape
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("+", fontSize = 24.sp, color = Color.White)
+            // Refresh Button
+            FloatingActionButton(
+                onClick = { loadTransactions() },
+                containerColor = MaterialTheme.colorScheme.secondary,
+                shape = CircleShape
+            ) {
+                Text("R", fontSize = 18.sp, color = Color.White)
+            }
+
+            // Add Button
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                shape = CircleShape
+            ) {
+                Text("+", fontSize = 24.sp, color = Color.White)
+            }
         }
     }
 
@@ -142,11 +220,51 @@ fun TransactionsScreen(userId: Int = 1) {
             userId = userId,
             onDismiss = { showAddDialog = false },
             onAdded = {
-                scope.launch {
-                    loadTransactions(userId) { transactions = it }
-                }
+                loadTransactions()
             }
         )
+    }
+}
+
+@Composable
+fun SwipeableTransactionItem(
+    transaction: TransactionResponse,
+    onDelete: () -> Unit
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                onDelete()
+                true
+            } else {
+                false
+            }
+        }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFE91E63))
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Text(
+                    text = "Delete",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            }
+        },
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = true
+    ) {
+        TransactionItem(transaction)
     }
 }
 
@@ -201,7 +319,7 @@ fun TransactionItem(transaction: TransactionResponse) {
     val isIncome = transaction.type == "income"
     val color = if (isIncome) Color(0xFF4CAF50) else Color(0xFFE91E63)
     val sign = if (isIncome) "+" else "-"
-    val emoji = categories.find { it.first == transaction.category }?.second ?: "??"
+    val categoryColor = categoryColors[transaction.category] ?: MaterialTheme.colorScheme.primary
     val title = transaction.title.takeIf { it.isNotBlank() } ?: "Untitled"
 
     Card(
@@ -225,10 +343,15 @@ fun TransactionItem(transaction: TransactionResponse) {
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+                        .background(categoryColor.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = emoji, fontSize = 20.sp)
+                    Text(
+                        text = categories.find { it.first == transaction.category }?.second ?: "O",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = categoryColor
+                    )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
@@ -242,6 +365,11 @@ fun TransactionItem(transaction: TransactionResponse) {
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
+                    Text(
+                        text = formatDate(transaction.created_at),
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    )
                 }
             }
             Text(
@@ -251,6 +379,17 @@ fun TransactionItem(transaction: TransactionResponse) {
                 color = color
             )
         }
+    }
+}
+
+fun formatDate(dateString: String): String {
+    return try {
+        val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+        val outputFormat = java.text.SimpleDateFormat("MMM dd", java.util.Locale.getDefault())
+        val date = inputFormat.parse(dateString.substring(0, 19))
+        outputFormat.format(date ?: return "Today")
+    } catch (e: Exception) {
+        "Today"
     }
 }
 
@@ -495,15 +634,7 @@ fun TypeButton(text: String, isSelected: Boolean, color: Color, onClick: () -> U
     }
 }
 
-suspend fun loadTransactions(userId: Int, onResult: (List<TransactionResponse>) -> Unit) {
-    try {
-        val response = RetrofitClient.api.getTransactions(userId)
-        if (response.isSuccessful) {
-            onResult(response.body() ?: emptyList())
-        } else {
-            onResult(emptyList())
-        }
-    } catch (e: Exception) {
-        onResult(emptyList())
-    }
-}
+
+
+
+

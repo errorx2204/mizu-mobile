@@ -259,3 +259,5 @@ fun MonthlyBarChart(transactions: List<TransactionResponse>) {
         }
     }
 }
+
+

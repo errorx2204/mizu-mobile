@@ -23,7 +23,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,7 +50,6 @@ import com.rushov.mizu.presentation.components.MizuButton
 import com.rushov.mizu.presentation.components.MizuTextField
 import kotlinx.coroutines.launch
 
-// Predefined categories with colors
 val expenseCategories = listOf(
     "Food" to Color(0xFFFF6B6B),
     "Transport" to Color(0xFF4ECDC4),
@@ -71,11 +73,13 @@ fun BudgetScreen(userId: Int = 1) {
     var transactions by remember { mutableStateOf<List<TransactionResponse>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var showAddDialog by remember { mutableStateOf(false) }
-    var selectedTab by remember { mutableStateOf("expense") } // "expense" or "income"
+    var selectedTab by remember { mutableStateOf("expense") }
+    var deleteMessage by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(key1 = true) {
+    fun loadData() {
         scope.launch {
+            isLoading = true
             try {
                 val budgetResponse = RetrofitClient.api.getBudgets(userId)
                 val transactionResponse = RetrofitClient.api.getTransactions(userId)
@@ -87,11 +91,14 @@ fun BudgetScreen(userId: Int = 1) {
                     transactions = transactionResponse.body() ?: emptyList()
                 }
             } catch (e: Exception) {
-                // Handle error
             } finally {
                 isLoading = false
             }
         }
+    }
+
+    LaunchedEffect(key1 = true) {
+        loadData()
     }
 
     val expenseBudgets = budgets.filter { it.category in expenseCategories.map { cat -> cat.first } }
@@ -111,7 +118,6 @@ fun BudgetScreen(userId: Int = 1) {
             modifier = Modifier.padding(vertical = 16.dp)
         )
 
-        // Tab Switcher
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -131,51 +137,117 @@ fun BudgetScreen(userId: Int = 1) {
             ) { selectedTab = "income" }
         }
 
+        if (deleteMessage.isNotEmpty()) {
+            Text(
+                text = deleteMessage,
+                fontSize = 14.sp,
+                color = Color(0xFF4CAF50),
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            LaunchedEffect(deleteMessage) {
+                kotlinx.coroutines.delay(2000)
+                deleteMessage = ""
+            }
+        }
+
         if (isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 color = MaterialTheme.colorScheme.primary
             )
         } else if (selectedTab == "expense" && expenseBudgets.isEmpty()) {
-            Text(
-                text = "No expense budgets set yet",
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                modifier = Modifier.padding(top = 32.dp)
-            )
+            Column(
+                modifier = Modifier.padding(top = 64.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "No expense budgets",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Tap + to set your first budget",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                )
+            }
         } else if (selectedTab == "income" && incomeBudgets.isEmpty()) {
-            Text(
-                text = "No income goals set yet",
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                modifier = Modifier.padding(top = 32.dp)
-            )
+            Column(
+                modifier = Modifier.padding(top = 64.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "No income goals",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Tap + to set your first goal",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                )
+            }
         } else {
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 val displayBudgets = if (selectedTab == "expense") expenseBudgets else incomeBudgets
                 
-                items(displayBudgets) { budget ->
+                items(
+                    items = displayBudgets,
+                    key = { it.id }
+                ) { budget ->
                     val spent = transactions
                         .filter { it.type == selectedTab && it.category == budget.category }
                         .sumOf { it.amount }
                     
-                    BudgetProgressCard(
+                    SwipeableBudgetCard(
                         budget = budget,
                         spent = spent,
-                        isIncome = selectedTab == "income"
+                        isIncome = selectedTab == "income",
+                        onDelete = {
+                            scope.launch {
+                                try {
+                                    val response = RetrofitClient.api.deleteBudget(budget.id)
+                                    if (response.isSuccessful) {
+                                        deleteMessage = "Budget deleted!"
+                                        loadData()
+                                    }
+                                } catch (e: Exception) {
+                                    deleteMessage = "Failed to delete"
+                                }
+                            }
+                        }
                     )
                 }
             }
         }
 
-        FloatingActionButton(
-            onClick = { showAddDialog = true },
+        Row(
             modifier = Modifier
                 .align(Alignment.End)
                 .padding(top = 16.dp),
-            containerColor = MaterialTheme.colorScheme.primary
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("+", fontSize = 24.sp, color = Color.White)
+            FloatingActionButton(
+                onClick = { loadData() },
+                containerColor = MaterialTheme.colorScheme.secondary,
+                shape = CircleShape
+            ) {
+                Text("R", fontSize = 18.sp, color = Color.White)
+            }
+
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                shape = CircleShape
+            ) {
+                Text("+", fontSize = 24.sp, color = Color.White)
+            }
         }
     }
 
@@ -184,15 +256,52 @@ fun BudgetScreen(userId: Int = 1) {
             userId = userId,
             isIncome = selectedTab == "income",
             onDismiss = { showAddDialog = false },
-            onAdded = {
-                scope.launch {
-                    val response = RetrofitClient.api.getBudgets(userId)
-                    if (response.isSuccessful) {
-                        budgets = response.body() ?: emptyList()
-                    }
-                }
-            }
+            onAdded = { loadData() }
         )
+    }
+}
+
+@Composable
+fun SwipeableBudgetCard(
+    budget: BudgetResponse,
+    spent: Double,
+    isIncome: Boolean,
+    onDelete: () -> Unit
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                onDelete()
+                true
+            } else {
+                false
+            }
+        }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFE91E63))
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Text(
+                    text = "Delete",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            }
+        },
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = true
+    ) {
+        BudgetProgressCard(budget, spent, isIncome)
     }
 }
 
@@ -219,18 +328,16 @@ fun BudgetProgressCard(budget: BudgetResponse, spent: Double, isIncome: Boolean)
     val percentage = if (budget.amount > 0) (spent / budget.amount).toFloat().coerceIn(0f, 1f) else 0f
     val remaining = budget.amount - spent
     
-    // For income: green = on track, orange = close to goal, red = exceeded (good!)
-    // For expense: green = under budget, orange = warning, red = exceeded
     val color = when {
         isIncome -> when {
-            percentage >= 1f -> Color(0xFF4CAF50) // Green - goal reached!
-            percentage >= 0.8f -> Color(0xFF2196F3) // Blue - close
-            else -> Color(0xFFFF9800) // Orange - need more
+            percentage >= 1f -> Color(0xFF4CAF50)
+            percentage >= 0.8f -> Color(0xFF2196F3)
+            else -> Color(0xFFFF9800)
         }
         else -> when {
-            percentage >= 1f -> Color(0xFFE91E63) // Red - exceeded
-            percentage >= 0.8f -> Color(0xFFFF9800) // Orange - warning
-            else -> Color(0xFF4CAF50) // Green - good
+            percentage >= 1f -> Color(0xFFE91E63)
+            percentage >= 0.8f -> Color(0xFFFF9800)
+            else -> Color(0xFF4CAF50)
         }
     }
 
@@ -268,9 +375,10 @@ fun BudgetProgressCard(budget: BudgetResponse, spent: Double, isIncome: Boolean)
                     )
                 }
                 Text(
-                    text = "?${String.format("%.0f", spent)} / ?${String.format("%.0f", budget.amount)}",
+                    text = "Rs. ${String.format("%.0f", spent)} / Rs. ${String.format("%.0f", budget.amount)}",
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(end = 8.dp)
                 )
             }
 
@@ -290,11 +398,11 @@ fun BudgetProgressCard(budget: BudgetResponse, spent: Double, isIncome: Boolean)
 
             Text(
                 text = if (isIncome) {
-                    if (remaining <= 0) "?? Goal reached! ?${String.format("%.0f", kotlin.math.abs(remaining))} extra!" 
-                    else "?${String.format("%.0f", remaining)} to reach goal"
+                    if (remaining <= 0) "Goal reached! Rs. ${String.format("%.0f", kotlin.math.abs(remaining))} extra!" 
+                    else "Rs. ${String.format("%.0f", remaining)} to reach goal"
                 } else {
-                    if (remaining >= 0) "?${String.format("%.0f", remaining)} remaining" 
-                    else "?${String.format("%.0f", kotlin.math.abs(remaining))} over budget!"
+                    if (remaining >= 0) "Rs. ${String.format("%.0f", remaining)} remaining" 
+                    else "Rs. ${String.format("%.0f", kotlin.math.abs(remaining))} over budget!"
                 },
                 fontSize = 12.sp,
                 color = if (isIncome) {
@@ -350,7 +458,6 @@ fun AddBudgetDialog(
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
 
-                    // Category Picker
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -379,7 +486,7 @@ fun AddBudgetDialog(
                     MizuTextField(
                         value = amount,
                         onValueChange = { amount = it },
-                        label = if (isIncome) "Goal Amount (?)" else "Budget Amount (?)"
+                        label = if (isIncome) "Goal Amount (Rs.)" else "Budget Amount (Rs.)"
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))

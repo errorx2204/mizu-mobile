@@ -6,6 +6,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 data class RegisterRequest(
@@ -79,7 +80,9 @@ interface MizuApi {
     ): Response<List<TransactionResponse>>
 
     @DELETE("transactions/{transaction_id}")
-    suspend fun deleteTransaction(transactionId: Int): Response<Unit>
+    suspend fun deleteTransaction(
+        @Path("transaction_id") transactionId: Int
+    ): Response<Unit>
 
     @POST("budgets/")
     suspend fun createBudget(
@@ -94,10 +97,12 @@ interface MizuApi {
 
     @PUT("budgets/{budget_id}")
     suspend fun updateBudget(
-        budgetId: Int,
+        @Path("budget_id") budgetId: Int,
         @Body request: BudgetRequest
     ): Response<BudgetResponse>
 
     @DELETE("budgets/{budget_id}")
-    suspend fun deleteBudget(budgetId: Int): Response<Unit>
+    suspend fun deleteBudget(
+        @Path("budget_id") budgetId: Int
+    ): Response<Unit>
 }

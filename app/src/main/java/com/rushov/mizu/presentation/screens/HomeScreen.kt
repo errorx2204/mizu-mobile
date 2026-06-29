@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,19 +48,23 @@ fun HomeScreen(userId: Int = 1) {
     var isLoading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(key1 = true) {
+    fun loadData() {
         scope.launch {
+            isLoading = true
             try {
                 val response = RetrofitClient.api.getTransactions(userId)
                 if (response.isSuccessful) {
                     transactions = response.body() ?: emptyList()
                 }
             } catch (e: Exception) {
-                // Handle error
             } finally {
                 isLoading = false
             }
         }
+    }
+
+    LaunchedEffect(key1 = true) {
+        loadData()
     }
 
     val income = transactions.filter { it.type == "income" }.sumOf { it.amount }
@@ -75,13 +78,28 @@ fun HomeScreen(userId: Int = 1) {
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        Text(
-            text = "Dashboard",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(vertical = 16.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Dashboard",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(vertical = 16.dp)
+            )
+
+            FloatingActionButton(
+                onClick = { loadData() },
+                modifier = Modifier.size(40.dp),
+                containerColor = MaterialTheme.colorScheme.secondary,
+                shape = CircleShape
+            ) {
+                Text("R", fontSize = 16.sp, color = Color.White)
+            }
+        }
 
         BalanceCard(balance, income, expense)
 
@@ -96,6 +114,26 @@ fun HomeScreen(userId: Int = 1) {
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 color = MaterialTheme.colorScheme.primary
             )
+        } else if (transactions.isEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 64.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "No data yet",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Add transactions to see analytics",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                )
+            }
         } else {
             ExpensePieChart(transactions)
             
@@ -136,7 +174,7 @@ fun BalanceCard(balance: Double, income: Double, expense: Double) {
             )
             
             Text(
-                text = "?${String.format("%.0f", balance)}",
+                text = "Rs. ${String.format("%.0f", balance)}",
                 fontSize = 36.sp,
                 fontWeight = FontWeight.Bold,
                 color = if (balance >= 0) Color(0xFF4CAF50) else Color(0xFFE91E63),
@@ -182,7 +220,7 @@ fun IncomeExpenseItem(label: String, amount: Double, color: Color) {
             )
         }
         Text(
-            text = "?${String.format("%.0f", amount)}",
+            text = "Rs. ${String.format("%.0f", amount)}",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = color
@@ -299,7 +337,7 @@ fun RecentTransactionItem(transaction: TransactionResponse) {
                 )
             }
             Text(
-                text = "$sign?${String.format("%.0f", transaction.amount)}",
+                text = "$sign Rs. ${String.format("%.0f", transaction.amount)}",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = color
