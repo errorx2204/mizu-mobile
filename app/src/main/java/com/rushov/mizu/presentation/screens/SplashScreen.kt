@@ -1,22 +1,18 @@
 package com.rushov.mizu.presentation.screens
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,11 +28,29 @@ fun SplashScreen(
 ) {
     val context = LocalContext.current
     val dataStore = remember { DataStoreManager(context) }
-    var isLoading by remember { mutableStateOf(true) }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "splash")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
 
     LaunchedEffect(key1 = true) {
-        delay(1500)
-
+        delay(2000)
         val loggedIn = dataStore.isLoggedIn.first()
         if (loggedIn) {
             onNavigateToMainApp()
@@ -54,25 +68,28 @@ fun SplashScreen(
     ) {
         Text(
             text = "MIZU",
-            fontSize = 48.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            fontSize = 56.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .scale(scale)
+                .alpha(alpha)
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         Text(
             text = "Money is Water",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            modifier = Modifier.padding(top = 8.dp)
+            fontSize = 18.sp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
 
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .padding(top = 32.dp)
-                    .size(32.dp),
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "Loading...",
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+        )
     }
 }

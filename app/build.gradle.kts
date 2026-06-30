@@ -39,6 +39,17 @@ android {
 }
 
 dependencies {
+    // WorkManager for recurring transactions
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // Material Icons
+    implementation("androidx.compose.material:material-icons-extended:1.6.0")
+    // Biometric Auth
+    implementation("androidx.biometric:biometric:1.1.0")
+
+    // Gson for JSON backup
+    implementation("com.google.code.gson:gson:2.10.1")
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
@@ -73,4 +84,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
+
+
 
