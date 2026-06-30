@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,7 +17,6 @@ import com.rushov.mizu.presentation.screens.OnboardingScreen
 import com.rushov.mizu.presentation.screens.RegisterScreen
 import com.rushov.mizu.presentation.screens.SplashScreen
 import com.rushov.mizu.ui.theme.MizuTheme
-import kotlinx.coroutines.flow.first
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,11 +32,9 @@ fun MizuApp() {
     val context = LocalContext.current
     val dataStore = remember { DataStoreManager(context) }
     var currentScreen by remember { mutableStateOf("splash") }
-    var isDarkMode by remember { mutableStateOf(false) }
-
-    LaunchedEffect(key1 = true) {
-        isDarkMode = dataStore.isDarkMode.first()
-    }
+    
+    // Use collectAsState for reactive dark mode updates
+    val isDarkMode by dataStore.isDarkMode.collectAsState(initial = false)
 
     MizuTheme(darkTheme = isDarkMode) {
         when (currentScreen) {

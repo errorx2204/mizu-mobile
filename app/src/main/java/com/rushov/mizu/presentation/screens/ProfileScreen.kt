@@ -23,7 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,16 +56,11 @@ fun ProfileScreen(
     val dataStore = remember { DataStoreManager(context) }
     val scope = rememberCoroutineScope()
 
-    var userName by remember { mutableStateOf("") }
-    var userEmail by remember { mutableStateOf("") }
-    var isDarkMode by remember { mutableStateOf(false) }
+    // Use collectAsState for automatic recomposition
+    val userName by dataStore.userName.collectAsState(initial = "")
+    val userEmail by dataStore.userEmail.collectAsState(initial = "")
+    val isDarkMode by dataStore.isDarkMode.collectAsState(initial = false)
     var exportMessage by remember { mutableStateOf("") }
-
-    LaunchedEffect(key1 = true) {
-        dataStore.userName.collect { userName = it }
-        dataStore.userEmail.collect { userEmail = it }
-        dataStore.isDarkMode.collect { isDarkMode = it }
-    }
 
     Column(
         modifier = Modifier
@@ -155,18 +150,37 @@ fun ProfileScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("??", fontSize = 20.sp)
-                        Spacer(modifier = Modifier.padding(start = 12.dp))
+                        // Text icon instead of emoji
                         Text(
-                            text = "Dark Mode",
-                            fontSize = 16.sp
+                            text = "DM",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                    RoundedCornerShape(4.dp)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
                         )
+                        Spacer(modifier = Modifier.padding(start = 12.dp))
+                        Column {
+                            Text(
+                                text = "Dark Mode",
+                                fontSize = 16.sp
+                            )
+                            Text(
+                                text = if (isDarkMode) "On - restart app to apply" else "Off",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
                     }
                     Switch(
                         checked = isDarkMode,
-                        onCheckedChange = {
+                        onCheckedChange = { checked ->
                             scope.launch {
-                                dataStore.setDarkMode(it)
+                                dataStore.setDarkMode(checked)
                             }
                         }
                     )
@@ -188,7 +202,18 @@ fun ProfileScreen(
                         .padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("??", fontSize = 20.sp)
+                    Text(
+                        text = "CSV",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
                     Spacer(modifier = Modifier.padding(start = 12.dp))
                     Text(
                         text = "Export Transactions to CSV",
@@ -232,7 +257,18 @@ fun ProfileScreen(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("??", fontSize = 20.sp)
+                Text(
+                    text = "OUT",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFE91E63),
+                    modifier = Modifier
+                        .background(
+                            Color(0xFFE91E63).copy(alpha = 0.1f),
+                            RoundedCornerShape(4.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
                 Spacer(modifier = Modifier.padding(start = 8.dp))
                 Text(
                     text = "Logout",
@@ -270,7 +306,6 @@ suspend fun exportTransactionsToCSV(context: Context, userId: Int, onResult: (St
             }
         }
 
-        // Share the file
         val uri = FileProvider.getUriForFile(
             context,
             "${context.packageName}.provider",
