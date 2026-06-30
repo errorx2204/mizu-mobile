@@ -31,12 +31,13 @@ fun SplashScreen(
     onNavigateToMainApp: () -> Unit
 ) {
     val context = LocalContext.current
+    val dataStore = remember { DataStoreManager(context) }
     var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(key1 = true) {
         delay(1500)
-        
-        val loggedIn = DataStoreManager.isLoggedIn(context).first()
+
+        val loggedIn = dataStore.isLoggedIn.first()
         if (loggedIn) {
             onNavigateToMainApp()
         } else {
@@ -57,14 +58,14 @@ fun SplashScreen(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
-        
+
         Text(
             text = "Money is Water",
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             modifier = Modifier.padding(top = 8.dp)
         )
-        
+
         if (isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier

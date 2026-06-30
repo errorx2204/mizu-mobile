@@ -29,7 +29,10 @@ data class AuthResponse(
 
 data class TokenResponse(
     val access_token: String,
-    val token_type: String
+    val token_type: String,
+    val user_id: Int,
+    val name: String,
+    val email: String
 )
 
 data class TransactionRequest(

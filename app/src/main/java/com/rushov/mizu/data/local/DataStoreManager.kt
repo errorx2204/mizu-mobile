@@ -3,6 +3,7 @@ package com.rushov.mizu.data.local
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -12,46 +13,53 @@ import kotlinx.coroutines.flow.map
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "mizu_prefs")
 
-object DataStoreManager {
-    private val TOKEN_KEY = stringPreferencesKey("jwt_token")
-    private val USER_ID_KEY = intPreferencesKey("user_id")
-    private val USER_NAME_KEY = stringPreferencesKey("user_name")
-    private val USER_EMAIL_KEY = stringPreferencesKey("user_email")
+class DataStoreManager(private val context: Context) {
+    companion object {
+        val USER_ID = intPreferencesKey("user_id")
+        val USER_NAME = stringPreferencesKey("user_name")
+        val USER_EMAIL = stringPreferencesKey("user_email")
+        val IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
+        val DARK_MODE = booleanPreferencesKey("dark_mode")
+    }
 
-    suspend fun saveUserData(context: Context, token: String, userId: Int, name: String, email: String) {
+    val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[IS_LOGGED_IN] ?: false
+    }
+
+    val userId: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[USER_ID] ?: -1
+    }
+
+    val userName: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[USER_NAME] ?: ""
+    }
+
+    val userEmail: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[USER_EMAIL] ?: ""
+    }
+
+    val isDarkMode: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[DARK_MODE] ?: false
+    }
+
+    suspend fun saveUser(id: Int, name: String, email: String) {
         context.dataStore.edit { prefs ->
-            prefs[TOKEN_KEY] = token
-            prefs[USER_ID_KEY] = userId
-            prefs[USER_NAME_KEY] = name
-            prefs[USER_EMAIL_KEY] = email
+            prefs[USER_ID] = id
+            prefs[USER_NAME] = name
+            prefs[USER_EMAIL] = email
+            prefs[IS_LOGGED_IN] = true
         }
     }
 
-    fun getToken(context: Context): Flow<String?> {
-        return context.dataStore.data.map { prefs -> prefs[TOKEN_KEY] }
-    }
-
-    fun getUserId(context: Context): Flow<Int?> {
-        return context.dataStore.data.map { prefs -> prefs[USER_ID_KEY] }
-    }
-
-    fun getUserName(context: Context): Flow<String?> {
-        return context.dataStore.data.map { prefs -> prefs[USER_NAME_KEY] }
-    }
-
-    fun getUserEmail(context: Context): Flow<String?> {
-        return context.dataStore.data.map { prefs -> prefs[USER_EMAIL_KEY] }
-    }
-
-    suspend fun clearUserData(context: Context) {
+    suspend fun clearUser() {
         context.dataStore.edit { prefs ->
             prefs.clear()
         }
     }
 
-    fun isLoggedIn(context: Context): Flow<Boolean> {
-        return context.dataStore.data.map { prefs ->
-            prefs[TOKEN_KEY] != null
+    suspend fun setDarkMode(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[DARK_MODE] = enabled
         }
     }
 }
