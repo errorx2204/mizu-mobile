@@ -1,56 +1,65 @@
 package com.rushov.mizu.presentation.screens
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rushov.mizu.data.remote.RetrofitClient
-import com.rushov.mizu.data.remote.TransactionResponse
 import kotlinx.coroutines.launch
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 @Composable
 fun ChartsScreen(userId: Int = 1) {
     val scope = rememberCoroutineScope()
-    var transactions by remember { mutableStateOf<List<TransactionResponse>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    val scrollState = rememberScrollState()
 
-    LaunchedEffect(key1 = userId) {
+    var categoryData by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf("") }
+
+    // Fetch transactions and group by category
+    LaunchedEffect(userId) {
         scope.launch {
             try {
-                isLoading = true
                 val response = RetrofitClient.api.getTransactions(userId)
-                if (response.isSuccessful) transactions = response.body() ?: emptyList()
+                if (response.isSuccessful && response.body() != null) {
+                    val transactions = response.body()!!
+                    val expenses = transactions.filter { it.type == "expense" }
+                    categoryData = expenses.groupBy { it.category }
+                        .mapValues { entry -> entry.value.sumOf { it.amount.toDouble() }.toFloat() }
+                    isLoading = false
+                } else {
+                    error = "Failed to load data"
+                    isLoading = false
+                }
             } catch (e: Exception) {
-            } finally {
+                error = "Error: ${e.message}"
                 isLoading = false
             }
         }
     }
-
-    val expenses = transactions.filter { it.type == "expense" }
-    val income = transactions.filter { it.type == "income" }
-    val totalExpense = expenses.sumOf { it.amount }
-    val totalIncome = income.sumOf { it.amount }
-    val balance = totalIncome - totalExpense
-
-    val categorySpending = expenses.groupBy { it.category }
-        .mapValues { (_, txs) -> txs.sumOf { it.amount } }
-        .toList()
-        .sortedByDescending { it.second }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
+            .verticalScroll(scrollState)
     ) {
         Text(
             text = "Analytics",
@@ -61,81 +70,177 @@ fun ChartsScreen(userId: Int = 1) {
         )
 
         if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            Box(
+                modifier = Modifier.fillMaxWidth().height(200.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (error.isNotEmpty()) {
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(16.dp)
+            )
+        } else if (categoryData.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "No Data Yet",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Add some transactions to see your spending breakdown!",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
         } else {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                SummaryCard("Income", totalIncome, Color(0xFF4CAF50), Modifier.weight(1f))
-                Spacer(modifier = Modifier.width(8.dp))
-                SummaryCard("Expense", totalExpense, Color(0xFFE91E63), Modifier.weight(1f))
-                Spacer(modifier = Modifier.width(8.dp))
-                SummaryCard("Balance", balance, Color(0xFF2196F3), Modifier.weight(1f))
+            // Spending by Category Card with Pie Chart
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Spending by Category",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    // Custom Pie Chart
+                    PieChart(
+                        data = categoryData,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp)
+                    )
+
+                    // Category Legend
+                    Spacer(modifier = Modifier.height(16.dp))
+                    val colors = listOf(
+                        Color(0xFF4CAF50), Color(0xFF2196F3), Color(0xFFFF9800),
+                        Color(0xFFE91E63), Color(0xFF9C27B0), Color(0xFF00BCD4),
+                        Color(0xFFFF5722), Color(0xFF795548)
+                    )
+                    categoryData.entries.forEachIndexed { index, (category, amount) ->
+                        val color = colors[index % colors.size]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .background(color, shape = CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "$category: $$amount",
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "Spending by Category",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
-            if (categorySpending.isEmpty()) {
-                Text(
-                    text = "No expense data yet",
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            // Total Spending Card
+            val totalSpending = categoryData.values.sum()
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                 )
-            } else {
-                val maxSpending = categorySpending.maxOfOrNull { it.second } ?: 1.0
-                val colors = listOf(
-                    Color(0xFFE91E63), Color(0xFF9C27B0), Color(0xFF3F51B5),
-                    Color(0xFF03A9F4), Color(0xFF4CAF50), Color(0xFFFF9800)
-                )
-
-                categorySpending.forEachIndexed { index, (category, amount) ->
-                    val percentage = amount / maxSpending
-                    val color = colors[index % colors.size]
-                    CategoryBar(
-                        category = category,
-                        amount = amount,
-                        percentage = percentage.toFloat(),
-                        color = color,
-                        total = totalExpense
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Total Expenses",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "$$totalSpending",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }
     }
 }
 
-
 @Composable
-fun CategoryBar(category: String, amount: Double, percentage: Float, color: Color, total: Double) {
-    Column {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(text = category, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text(
-                text = "Rs. ${String.format("%.2f", amount)} (${String.format("%.1f", (amount/total)*100)}%)",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+fun PieChart(
+    data: Map<String, Float>,
+    modifier: Modifier = Modifier,
+    colors: List<Color> = listOf(
+        Color(0xFF4CAF50), Color(0xFF2196F3), Color(0xFFFF9800),
+        Color(0xFFE91E63), Color(0xFF9C27B0), Color(0xFF00BCD4),
+        Color(0xFFFF5722), Color(0xFF795548)
+    )
+) {
+    val total = data.values.sum()
+    if (total == 0f) return
+
+    Canvas(modifier = modifier) {
+        val canvasWidth = size.width
+        val canvasHeight = size.height
+        val radius = (canvasWidth.coerceAtMost(canvasHeight) / 2) * 0.8f
+        val centerX = canvasWidth / 2
+        val centerY = canvasHeight / 2
+
+        var startAngle = 0f
+
+        data.entries.forEachIndexed { index, (_, amount) ->
+            val sweepAngle = (amount / total) * 360f
+            val color = colors[index % colors.size]
+
+            drawArc(
+                color = color,
+                startAngle = startAngle,
+                sweepAngle = sweepAngle,
+                useCenter = true,
+                topLeft = Offset(centerX - radius, centerY - radius),
+                size = Size(radius * 2, radius * 2)
             )
+
+            startAngle += sweepAngle
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(20.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(percentage)
-                    .height(20.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(color)
-            )
-        }
+
+        // Draw hole for donut effect
+        drawCircle(
+            color = Color.Transparent,
+            radius = radius * 0.5f,
+            center = Offset(centerX, centerY)
+        )
     }
 }

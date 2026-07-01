@@ -20,6 +20,8 @@ class DataStoreManager(private val context: Context) {
         val USER_EMAIL = stringPreferencesKey("user_email")
         val IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
         val DARK_MODE = booleanPreferencesKey("dark_mode")
+        val BIOMETRIC_ENABLED = booleanPreferencesKey("biometric_enabled")
+        val RECURRING_TRANSACTIONS_KEY = stringPreferencesKey("recurring_transactions")
     }
 
     val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -40,6 +42,14 @@ class DataStoreManager(private val context: Context) {
 
     val isDarkMode: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[DARK_MODE] ?: false
+    }
+
+    val isBiometricEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[BIOMETRIC_ENABLED] ?: false
+    }
+
+    val recurringTransactions: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[RECURRING_TRANSACTIONS_KEY] ?: ""
     }
 
     suspend fun saveUser(id: Int, name: String, email: String) {
@@ -63,16 +73,15 @@ class DataStoreManager(private val context: Context) {
         }
     }
 
-    // Recurring Transactions
-    val recurringTransactions: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[RECURRING_TRANSACTIONS_KEY] ?: ""
-    }
-    
-    suspend fun saveRecurringTransactions(transactionsJson: String) {
-        context.dataStore.edit { preferences ->
-            preferences[RECURRING_TRANSACTIONS_KEY] = transactionsJson
+    suspend fun setBiometricEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[BIOMETRIC_ENABLED] = enabled
         }
     }
 
+    suspend fun saveRecurringTransactions(transactionsJson: String) {
+        context.dataStore.edit { prefs ->
+            prefs[RECURRING_TRANSACTIONS_KEY] = transactionsJson
+        }
+    }
 }
-    private val RECURRING_TRANSACTIONS_KEY = stringPreferencesKey("recurring_transactions")

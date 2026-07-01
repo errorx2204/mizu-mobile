@@ -75,8 +75,8 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     
     // Charts - Vico (modern, Compose-friendly)
-    implementation("com.patrykandpatrick.vico:compose:2.0.0-alpha.28")
-    implementation("com.patrykandpatrick.vico:core:2.0.0-alpha.28")
+    implementation("com.patrykandpatrick.vico:compose:1.14.0")
+    implementation("com.patrykandpatrick.vico:core:1.14.0")
     
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -86,6 +86,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
+
 
 
 

@@ -3,18 +3,15 @@ package com.rushov.mizu
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import com.rushov.mizu.data.local.DataStoreManager
+import com.rushov.mizu.presentation.screens.ChangePinScreen
 import com.rushov.mizu.presentation.screens.LockScreen
 import com.rushov.mizu.presentation.screens.LoginScreen
 import com.rushov.mizu.presentation.screens.MainAppScreen
 import com.rushov.mizu.presentation.screens.OnboardingScreen
+import com.rushov.mizu.presentation.screens.PinSetupScreen
 import com.rushov.mizu.presentation.screens.RegisterScreen
 import com.rushov.mizu.presentation.screens.SplashScreen
 import com.rushov.mizu.ui.theme.MizuTheme
@@ -22,6 +19,7 @@ import com.rushov.mizu.ui.theme.MizuTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             MizuApp()
         }
@@ -30,13 +28,17 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MizuApp() {
+
     val context = LocalContext.current
     val dataStore = remember { DataStoreManager(context) }
 
-    var currentScreen by remember { mutableStateOf("splash") }
+    var currentScreen by remember {
+        mutableStateOf("splash")
+    }
 
-    // Reactive dark mode updates
-    val isDarkMode by dataStore.isDarkMode.collectAsState(initial = false)
+    val isDarkMode by dataStore.isDarkMode.collectAsState(
+        initial = false
+    )
 
     MizuTheme(darkTheme = isDarkMode) {
 
@@ -75,15 +77,31 @@ fun MizuApp() {
                 }
             )
 
-            "lock" -> LockScreen(
-                onUnlock = {
+            "pin_setup" -> PinSetupScreen(
+                onPinSaved = {
                     currentScreen = "main"
                 }
             )
 
+            "change_pin" -> ChangePinScreen(
+                onPinChanged = {
+                    currentScreen = "main"
+                }
+            )
+            "lock" -> LockScreen(
+                onUnlock = {
+                    currentScreen = "main"
+                },
+                onForgotPin = {
+                    currentScreen = "login"
+                }
+            )
             "main" -> MainAppScreen(
                 onLogout = {
                     currentScreen = "login"
+                },
+                onChangePin = {
+                    currentScreen = "change_pin"
                 }
             )
         }

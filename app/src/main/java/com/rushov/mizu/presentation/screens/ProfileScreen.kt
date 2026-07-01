@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Environment
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.biometric.BiometricManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,7 +26,6 @@ import com.rushov.mizu.data.local.DataStoreManager
 import com.rushov.mizu.data.remote.RetrofitClient
 import com.rushov.mizu.presentation.utils.BackupHelper
 import com.rushov.mizu.presentation.utils.CurrencyHelper
-import com.rushov.mizu.presentation.utils.PDFHelper
 import com.rushov.mizu.presentation.utils.LanguageHelper
 import kotlinx.coroutines.launch
 import java.io.File
@@ -37,8 +37,9 @@ import java.util.Locale
 @Composable
 fun ProfileScreen(
     userId: Int = 1,
-    onLogout: () -> Unit
-) {
+    onLogout: () -> Unit,
+    onChangePin: () -> Unit = {}
+){
     val context = LocalContext.current
     val dataStore = remember { DataStoreManager(context) }
     val scope = rememberCoroutineScope()
@@ -46,6 +47,7 @@ fun ProfileScreen(
     val userName by dataStore.userName.collectAsState(initial = "")
     val userEmail by dataStore.userEmail.collectAsState(initial = "")
     val isDarkMode by dataStore.isDarkMode.collectAsState(initial = false)
+    val isBiometricEnabled by dataStore.isBiometricEnabled.collectAsState(initial = false)
     val selectedCurrency by CurrencyHelper.getSelectedCurrency(context).collectAsState(initial = "INR")
 
     var exportMessage by remember { mutableStateOf("") }
@@ -53,6 +55,12 @@ fun ProfileScreen(
     var showCurrencyDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     val selectedLanguage by LanguageHelper.getSelectedLanguage(context).collectAsState(initial = "en")
+
+    // Check biometric hardware availability
+    val biometricManager = remember { BiometricManager.from(context) }
+    val canAuthenticate = remember {
+        biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+    }
 
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -186,6 +194,96 @@ fun ProfileScreen(
 
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
+                // Biometric Toggle — ALWAYS SHOW (with availability indicator)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "BIO",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (canAuthenticate) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                            modifier = Modifier
+                                .background(
+                                    if (canAuthenticate) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+                                    RoundedCornerShape(4.dp)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                        Spacer(modifier = Modifier.padding(start = 12.dp))
+                        Column {
+                            Text(
+                                text = "Fingerprint Unlock",
+                                fontSize = 16.sp,
+                                color = if (canAuthenticate) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                            )
+                            Text(
+                                text = if (canAuthenticate) {
+                                    if (isBiometricEnabled) "Enabled" else "Disabled"
+                                } else {
+                                    "Not available on this device"
+                                },
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = isBiometricEnabled,
+                        onCheckedChange = { checked ->
+                            scope.launch {
+                                dataStore.setBiometricEnabled(checked)
+                            }
+                        },
+                        enabled = canAuthenticate
+                    )
+                }
+
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                // Change PIN
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onChangePin() }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "PIN",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+
+                    Spacer(modifier = Modifier.padding(start = 12.dp))
+
+                    Column {
+                        Text(
+                            text = "Change PIN",
+                            fontSize = 16.sp
+                        )
+
+                        Text(
+                            text = "Update your app security PIN",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
                 // Currency Selector
                 Row(
                     modifier = Modifier

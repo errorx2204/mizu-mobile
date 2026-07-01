@@ -29,7 +29,10 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainAppScreen(onLogout: () -> Unit) {
+fun MainAppScreen(
+    onLogout: () -> Unit,
+    onChangePin: () -> Unit = {}
+) {
     val context = LocalContext.current
     val dataStore = remember { DataStoreManager(context) }
     var userId by remember { mutableStateOf(1) }
@@ -104,7 +107,11 @@ fun MainAppScreen(onLogout: () -> Unit) {
                 3 -> ChartsScreen(userId = userId)
                 4 -> BudgetScreen(userId = userId)
                 5 -> RecurringTransactionsScreen(userId = userId)
-                6 -> ProfileScreen(userId = userId, onLogout = onLogout)
+                6 -> ProfileScreen(
+                    userId = userId,
+                    onLogout = onLogout,
+                    onChangePin = onChangePin
+                )
             }
         }
     }
