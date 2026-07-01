@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Wallet
@@ -80,22 +81,28 @@ fun MainAppScreen(
                     onClick = { selectedTab = 3 }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Wallet, contentDescription = "Budget") },
-                    label = { Text("Budget") },
+                    icon = { Icon(Icons.Default.Psychology, contentDescription = "Insights") },
+                    label = { Text("AI") },
                     selected = selectedTab == 4,
                     onClick = { selectedTab = 4 }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Repeat, contentDescription = "Recurring") },
-                    label = { Text("Recurring") },
+                    icon = { Icon(Icons.Default.Wallet, contentDescription = "Budget") },
+                    label = { Text("Budget") },
                     selected = selectedTab == 5,
                     onClick = { selectedTab = 5 }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
-                    label = { Text("Profile") },
+                    icon = { Icon(Icons.Default.Repeat, contentDescription = "Recurring") },
+                    label = { Text("Recurring") },
                     selected = selectedTab == 6,
                     onClick = { selectedTab = 6 }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
+                    label = { Text("Profile") },
+                    selected = selectedTab == 7,
+                    onClick = { selectedTab = 7 }
                 )
             }
         }
@@ -105,9 +112,10 @@ fun MainAppScreen(
                 0 -> HomeScreen(userId = userId)
                 1 -> TransactionScreen(userId = userId)
                 3 -> ChartsScreen(userId = userId)
-                4 -> BudgetScreen(userId = userId)
-                5 -> RecurringTransactionsScreen(userId = userId)
-                6 -> ProfileScreen(
+                4 -> InsightsScreen(userId = userId)
+                5 -> BudgetScreen(userId = userId)
+                6 -> RecurringTransactionsScreen(userId = userId)
+                7 -> ProfileScreen(
                     userId = userId,
                     onLogout = onLogout,
                     onChangePin = onChangePin

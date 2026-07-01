@@ -64,6 +64,26 @@ data class BudgetResponse(
     val amount: Double
 )
 
+data class InsightItem(
+    val type: String,
+    val title: String,
+    val message: String,
+    val category: String,
+    val severity: String
+)
+
+data class InsightSummary(
+    val total_spent: Double,
+    val total_budget: Double,
+    val categories_tracked: Int,
+    val insights_count: Int
+)
+
+data class InsightsResponse(
+    val insights: List<InsightItem>,
+    val summary: InsightSummary
+)
+
 interface MizuApi {
     @POST("auth/register")
     suspend fun register(@Body request: RegisterRequest): Response<AuthResponse>
@@ -108,4 +128,9 @@ interface MizuApi {
     suspend fun deleteBudget(
         @Path("budget_id") budgetId: Int
     ): Response<Unit>
+
+    @GET("insights/{user_id}")
+    suspend fun getInsights(
+        @Path("user_id") userId: Int
+    ): Response<InsightsResponse>
 }
