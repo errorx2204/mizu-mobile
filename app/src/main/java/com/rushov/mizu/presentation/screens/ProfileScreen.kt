@@ -27,6 +27,7 @@ import com.rushov.mizu.data.remote.RetrofitClient
 import com.rushov.mizu.presentation.utils.BackupHelper
 import com.rushov.mizu.presentation.utils.CurrencyHelper
 import com.rushov.mizu.presentation.utils.LanguageHelper
+import com.rushov.mizu.presentation.utils.PDFHelper
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileWriter
@@ -357,8 +358,60 @@ fun ProfileScreen(
                 }
 
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
+                // Export PDF
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            scope.launch {
+                                try {
+                                    val response = RetrofitClient.api.getTransactions(userId)
+                                    if (response.isSuccessful && response.body() != null) {
+                                        PDFHelper.exportTransactionsToPDF(
+                                            context,
+                                            response.body()!!,
+                                            userName,
+                                        ) { message ->
+                                            exportMessage = message
+                                        }
+                                    } else {
+                                        exportMessage = "Failed to fetch transactions"
+                                    }
+                                } catch (e: Exception) {
+                                    exportMessage = "Error: ${e.message}"
+                                }
+                            }
+                        }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "PDF",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.padding(start = 12.dp))
+                    Text(text = "Export Report to PDF", fontSize = 16.sp)
+                }
 
-                // Backup & Restore
+                if (exportMessage.isNotEmpty()) {
+                    Text(
+                        text = exportMessage,
+                        fontSize = 12.sp,
+                        color = Color(0xFF4CAF50),
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+// Backup & Restore
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -539,3 +592,4 @@ suspend fun exportTransactionsToCSV(context: Context, userId: Int, onResult: (St
         onResult("Error: ${e.message}")
     }
 }
+
