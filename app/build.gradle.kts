@@ -70,6 +70,9 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
+      // Animations
+      implementation("androidx.compose.animation:animation:1.6.8")
+      implementation("com.google.accompanist:accompanist-navigation-animation:0.34.0")
     
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
@@ -86,6 +89,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
+
 
 
 

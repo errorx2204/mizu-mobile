@@ -1,8 +1,17 @@
 package com.rushov.mizu.presentation.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.*
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -17,6 +26,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -27,6 +40,12 @@ import com.rushov.mizu.data.remote.RetrofitClient
 import com.rushov.mizu.presentation.utils.CategoriesHelper
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+
+data class NavItem(
+    val icon: ImageVector,
+    val label: String,
+    val index: Int
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +63,17 @@ fun MainAppScreen(
         userId = dataStore.userId.first()
     }
 
+    val navItems = listOf(
+        NavItem(Icons.Default.Home, "Home", 0),
+        NavItem(Icons.Default.Search, "Trans", 1),
+        NavItem(Icons.Default.Add, "Add", 2),
+        NavItem(Icons.Default.Analytics, "Charts", 3),
+        NavItem(Icons.Default.Psychology, "AI", 4),
+        NavItem(Icons.Default.Wallet, "Budget", 5),
+        NavItem(Icons.Default.Repeat, "Recurring", 6),
+        NavItem(Icons.Default.Person, "Profile", 7)
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -55,56 +85,17 @@ fun MainAppScreen(
             )
         },
         bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                    label = { Text("Home") },
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Search, contentDescription = "Transactions") },
-                    label = { Text("Trans") },
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Add, contentDescription = "Add") },
-                    label = { Text("Add") },
-                    selected = selectedTab == 2,
-                    onClick = { showAddDialog = true }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Analytics, contentDescription = "Charts") },
-                    label = { Text("Charts") },
-                    selected = selectedTab == 3,
-                    onClick = { selectedTab = 3 }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Psychology, contentDescription = "Insights") },
-                    label = { Text("AI") },
-                    selected = selectedTab == 4,
-                    onClick = { selectedTab = 4 }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Wallet, contentDescription = "Budget") },
-                    label = { Text("Budget") },
-                    selected = selectedTab == 5,
-                    onClick = { selectedTab = 5 }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Repeat, contentDescription = "Recurring") },
-                    label = { Text("Recurring") },
-                    selected = selectedTab == 6,
-                    onClick = { selectedTab = 6 }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
-                    label = { Text("Profile") },
-                    selected = selectedTab == 7,
-                    onClick = { selectedTab = 7 }
-                )
-            }
+            AnimatedBottomNav(
+                items = navItems,
+                selectedTab = selectedTab,
+                onTabSelected = { index ->
+                    if (index == 2) {
+                        showAddDialog = true
+                    } else {
+                        selectedTab = index
+                    }
+                }
+            )
         }
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
@@ -133,6 +124,105 @@ fun MainAppScreen(
                 selectedTab = 1
             }
         )
+    }
+}
+
+@Composable
+fun AnimatedBottomNav(
+    items: List<NavItem>,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+        tonalElevation = 3.dp,
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp)
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items.forEach { item ->
+                val isSelected = item.index == selectedTab
+                
+                val scale by animateFloatAsState(
+                    targetValue = if (isSelected) 1.15f else 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    ),
+                    label = "icon_scale_${item.index}"
+                )
+                
+                val iconAlpha by animateFloatAsState(
+                    targetValue = if (isSelected) 1f else 0.6f,
+                    animationSpec = tween(300),
+                    label = "icon_alpha_${item.index}"
+                )
+
+                // Use Box to avoid RowScope AnimatedVisibility conflict
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { onTabSelected(item.index) }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    ) {
+                        // Selected background indicator
+                        Box(
+                            modifier = Modifier.size(40.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isSelected) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                            shape = CircleShape
+                                        )
+                                )
+                            }
+                            
+                            Icon(
+                                imageVector = item.icon,
+                                contentDescription = item.label,
+                                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                modifier = Modifier
+                                    .scale(scale)
+                                    .alpha(iconAlpha)
+                                    .size(24.dp)
+                            )
+                        }
+
+                        AnimatedVisibility(
+                            visible = isSelected,
+                            enter = fadeIn(animationSpec = tween(200)) + expandVertically(animationSpec = tween(200)),
+                            exit = fadeOut(animationSpec = tween(150)) + shrinkVertically(animationSpec = tween(150))
+                        ) {
+                            Text(
+                                text = item.label,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
