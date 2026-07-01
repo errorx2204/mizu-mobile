@@ -1,4 +1,5 @@
 plugins {
+    kotlin("plugin.serialization") version "1.9.22"
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
@@ -39,6 +40,7 @@ android {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     // WorkManager for recurring transactions
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
@@ -49,7 +51,7 @@ dependencies {
 
     // Gson for JSON backup
     implementation("com.google.code.gson:gson:2.10.1")
-
+    //implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)

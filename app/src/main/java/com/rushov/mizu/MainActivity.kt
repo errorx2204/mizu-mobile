@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.rushov.mizu.data.local.DataStoreManager
+import com.rushov.mizu.presentation.screens.LockScreen
 import com.rushov.mizu.presentation.screens.LoginScreen
 import com.rushov.mizu.presentation.screens.MainAppScreen
 import com.rushov.mizu.presentation.screens.OnboardingScreen
@@ -31,30 +32,59 @@ class MainActivity : ComponentActivity() {
 fun MizuApp() {
     val context = LocalContext.current
     val dataStore = remember { DataStoreManager(context) }
+
     var currentScreen by remember { mutableStateOf("splash") }
-    
-    // Use collectAsState for reactive dark mode updates
+
+    // Reactive dark mode updates
     val isDarkMode by dataStore.isDarkMode.collectAsState(initial = false)
 
     MizuTheme(darkTheme = isDarkMode) {
+
         when (currentScreen) {
+
             "splash" -> SplashScreen(
-                onNavigateToOnboarding = { currentScreen = "onboarding" },
-                onNavigateToMainApp = { currentScreen = "main" }
+                onNavigateToOnboarding = {
+                    currentScreen = "onboarding"
+                },
+                onNavigateToMainApp = {
+                    currentScreen = "lock"
+                }
             )
+
             "onboarding" -> OnboardingScreen(
-                onOnboardingFinished = { currentScreen = "login" }
+                onOnboardingFinished = {
+                    currentScreen = "login"
+                }
             )
+
             "login" -> LoginScreen(
-                onLoginSuccess = { currentScreen = "main" },
-                onNavigateToRegister = { currentScreen = "register" }
+                onLoginSuccess = {
+                    currentScreen = "lock"
+                },
+                onNavigateToRegister = {
+                    currentScreen = "register"
+                }
             )
+
             "register" -> RegisterScreen(
-                onRegisterSuccess = { currentScreen = "login" },
-                onNavigateToLogin = { currentScreen = "login" }
+                onRegisterSuccess = {
+                    currentScreen = "login"
+                },
+                onNavigateToLogin = {
+                    currentScreen = "login"
+                }
             )
+
+            "lock" -> LockScreen(
+                onUnlock = {
+                    currentScreen = "main"
+                }
+            )
+
             "main" -> MainAppScreen(
-                onLogout = { currentScreen = "login" }
+                onLogout = {
+                    currentScreen = "login"
+                }
             )
         }
     }

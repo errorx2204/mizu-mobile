@@ -62,4 +62,17 @@ class DataStoreManager(private val context: Context) {
             prefs[DARK_MODE] = enabled
         }
     }
+
+    // Recurring Transactions
+    val recurringTransactions: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[RECURRING_TRANSACTIONS_KEY] ?: ""
+    }
+    
+    suspend fun saveRecurringTransactions(transactionsJson: String) {
+        context.dataStore.edit { preferences ->
+            preferences[RECURRING_TRANSACTIONS_KEY] = transactionsJson
+        }
+    }
+
 }
+    private val RECURRING_TRANSACTIONS_KEY = stringPreferencesKey("recurring_transactions")
